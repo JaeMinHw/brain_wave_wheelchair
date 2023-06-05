@@ -1,55 +1,71 @@
-# # 라즈베리 파이에 넣고 아두이노 제어하는 코드 추가해서 실행해보기
-
-# import socketio
-
-# sio = socketio.Client()
-
-# @sio.event
-# def connect():
-#     print('Connected to server')
-
-# @sio.on('order')
-# def handle_response(data):
-#     print('Received response:', data)
-#     if data == 'go' :
-#         ard.write("1")
-#         # 아두이노 제어하기
-    
-# @sio.on('response')
-# def response(message) :
-#     print(message)
-
-# if __name__ == '__main__':
-#     sio.connect('http://127.0.0.1:5000')
-#     # while True:
-#     #     message = input('Enter a message (or "exit" to quit): ')
-#     #     if message == 'exit':
-#     #         break
-#     #     sio.emit('message', message)
-#     # sio.disconnect()
-
-
-
-
-
 import socketio
 import serial
 
 port = "/dev/ttyACM0"
 ard = serial.Serial(port,9600)
 
+import RPi.GPIO as gpio
+import time
+ 
+TRIGER = 24
+ECHO = 23
+ 
+gpio.setmode(gpio.BCM)
+gpio.setup(TRIGER, gpio.OUT)
+gpio.setup(ECHO, gpio.IN)
+
 
 sio = socketio.Client()
+
+
+# after distance detect, if distance is too close, s = '7' ard.write(s.encode()) 
 
 
 
 @sio.event
 def connect() :
     print('Connect to server')
+    
 
 @sio.on('order')
 def order(data):
     print('Received response:',data)
+    move(data)
+    cal_distance()
+
+
+    
+
+def cal_distance() :
+    try:
+        while True:
+            gpio.output(TRIGER, gpio.LOW)
+            time.sleep(0.1)
+            gpio.output(TRIGER, gpio.HIGH)
+            time.sleep(0.00002)
+            gpio.output(TRIGER, gpio.LOW)
+
+            while gpio.input(ECHO) == gpio.LOW:
+                startTime = time.time()   # 1sec unit
+
+            while gpio.input(ECHO) == gpio.HIGH:
+                endTime = time.time()
+
+            period = endTime - startTime
+            dist1 = round(period * 1000000 / 58, 2)
+            dist2 = round(period * 17241, 2)
+
+            print("Dist1", dist1, "cm", ", Dist2", dist2, "cm")
+            
+            if dist1 < 10 and dist2 < 10:
+                move("stop")
+                print("detect")
+        
+    except:
+        gpio.cleanup()  
+
+
+def move(data) :
     if data == 'go':
         s = '1'
         print("let's get it")
@@ -62,9 +78,24 @@ def order(data):
         s = '3'
         ard.write(s.encode())
 
+    elif data == 'left':
+        s = '4'
+        ard.write(s.encode())
+
+    elif data == 'Turning_rigth':
+        s = '5'
+        ard.write(s.encode())
+    elif data == 'Turning_left':
+        s = '6'
+        ard.write(s.encode())
+    elif data == 'stop':
+        s = '7'
+        ard.write(s.encode())
+
 @sio.on('response')
 def response(data):
     print(data)
+
 
 if __name__ == '__main__' :
     sio.connect('http://43.200.191.244:5000')
