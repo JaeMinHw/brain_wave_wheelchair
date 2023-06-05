@@ -240,6 +240,11 @@ def tok(who,tok):
     conn.commit()
     conn.close()
     return "success"
+
+
+@app.route('/video')
+def video() :
+    print("tt")
     
 
 
