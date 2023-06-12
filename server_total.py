@@ -8,6 +8,7 @@ from flask_socketio import SocketIO, emit
 import pymysql
 from flask import Flask
 from flask_cors import CORS
+from firebase_admin import messaging
 import firebase_admin
 from firebase_admin import credentials
 
@@ -187,7 +188,7 @@ def crash(who):
     c = os.getcwd()
     print(c)
     if not firebase_admin._apps:
-        cred = credentials.Certificate(c+"/serviceAccountKey.json")
+        cred = credentials.Certificate(c+"/brain-ewc-firebase-adminsdk-ulueg-8a2accc282.json")
         firebase_admin.initialize_app(cred)
     global host
     global port
@@ -201,11 +202,16 @@ def crash(who):
     from protect, protect_device
     where user_id = %s and protect.pro_id = protect_device.pro_id """
     
-    val = (id)
+    val = (who)
     
     cursor.execute(query,val)
     rows = cursor.fetchall()
-    registration_token = rows[0]
+    
+    for row in rows:
+       
+        registration_token = row[0]
+        print(registration_token)
+        
     
     message = messaging.Message(
         notification=messaging.Notification(
@@ -218,6 +224,7 @@ def crash(who):
     response = messaging.send(message)
     print('Successfully sent message:', response)
     conn.close()
+    return "success"
     
     
 @app.route('/token/<string:who>/<string:tok>')
@@ -242,38 +249,7 @@ def tok(who,tok):
     return "success"
 
 
-@app.route('/video')
-def video() :
-    print("tt")
-    
 
-
-# ----------------- socketio -------------------- 
-
-# 휠체어 제어를 위한 rest
-@app.route('/brain_wave/<string:value>')
-def brain_wave(value) :
-    socketio.emit("order",value)
-    return "success" + value
-
-
-@socketio.on('connect')
-def connect() :
-    socketio.emit("response","너 연결")
-
-@socketio.on("request")
-def request(message) :
-    print("message : " + message )
-    socketio.emit("order",message)
-    
-    
-@socketio.on('message')
-def message(message) :
-    print(message)
-    
-
-
-    
 # 사용자 위치 저장
 @app.route('/place/<string:user_id>/<string:latitude>/<string:longitude>')
 def place(user_id,latitude,longitude):
@@ -433,7 +409,53 @@ def pro_dupliSign(who,id):
 
 
 
+
+
+
+# ----------------- socketio -------------------- 
+
+# 휠체어 제어를 위한 rest
+@app.route('/brain_wave/<string:value>')
+def brain_wave(value) :
+    socketio.emit("order",value)
+    return "success" + value
+
+
+@socketio.on('connect')
+def connect() :
+    socketio.emit("response","너 연결")
+
+@socketio.on("request")
+def request(message) :
+    print("message : " + message )
+    socketio.emit("order",message)
+    
+    
+@socketio.on('message')
+def message(message) :
+    print(message)
+    
+    
+@socketio.on('start_video')
+def video_conn(data):
+    # 라즈베리 파이에게 카메라 달라고 하기
+    emit('camera_video',"start")
+    
+@socketio.on('end_video')
+def video_conn(data):
+    # 라즈베리 파이에게 카메라 달라고 하기
+    emit('camera_video',"end")
+    
+# 라즈베리파이에서 이미지 주는 경로
+@app.route('/upload', methods=['POST'])
+def handle_upload():
+    image = request.json['image']
+    # 이미지 처리 로직을 수행
+    # 안드로이드가 받을 수 있게
+    emit('stream',image,broadcast = True)
+    return 200
+
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
-    # socketio.run(app)
+    # app.run(host='0.0.0.0')
+    socketio.run(app, host='0.0.0.0')
