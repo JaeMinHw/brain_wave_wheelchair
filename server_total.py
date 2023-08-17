@@ -394,6 +394,7 @@ def pro_dupliSign(who,id):
         # query_pro = """select count(*) from protect where %s""",id
         # cursor1.execute(query_pro)
         # rows1 = cursor1.fetchall()
+
         
         
 
@@ -446,6 +447,20 @@ def video_conn(data):
     # 라즈베리 파이에게 카메라 달라고 하기
     emit('camera_video',"end")
     
+    
+    
+    
+# 테스트 필요
+    
+# 라즈베리파이에서 서버로 이미지 전송
+@socketio.on('upload')
+def rasp_to_server(data):
+    socketio.emit('stream',data)
+    
+    
+    
+    
+    
 # 라즈베리파이에서 이미지 주는 경로
 @app.route('/upload', methods=['POST'])
 def handle_upload():
@@ -456,6 +471,10 @@ def handle_upload():
     return 200
 
     
+    
+@app.route('/test/<string:value>')
+def test(value):
+    return value
 if __name__ == '__main__':
     # app.run(host='0.0.0.0')
     socketio.run(app, host='0.0.0.0')

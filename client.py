@@ -149,6 +149,10 @@ def move(data) :
 def response(data):
     print(data)
 
+
+
+
+# ----------------- 테스트2 --------------
 @sio.on('camera_video')
 def give_video(data):
     if data == "start":
@@ -164,9 +168,9 @@ def give_video(data):
         # stop take image
         print("end")
         capt.cancle()
-
-
-    
+        
+        
+        
 async def capture_and_encode_image():
     # 이미지 캡처
     capture = cv2.VideoCapture("http://127.0.0.1:9090/?action=stream")
@@ -180,15 +184,12 @@ async def capture_and_encode_image():
 
     return image_base64
 
-async def send_image_to_server(image_base64):
-    url = "http://43.200.191.244:5000/upload"  # 실제 서버 주소와 포트를 입력하세요
-    payload = {"image": image_base64}
-    headers = {"Content-Type": "application/json"}
 
-    response = await asyncio.get_event_loop().run_in_executor(
-        None, lambda: requests.post(url, json=payload, headers=headers)
-    )
-    return response
+async def send_image_to_server(image_base64):
+    print(image_base64)
+    socketio.emit('upload',image_base64)
+
+
 
 async def main():
     while True:
@@ -197,12 +198,8 @@ async def main():
             image_base64 = await capture_and_encode_image()
 
             # 이미지 서버로 전송 비동기로 처리
-            response = await send_image_to_server(image_base64)
+            await send_image_to_server(image_base64)
 
-            if response.status_code == 200:
-                print("이미지 전송 성공")
-            else:
-                print("이미지 전송 실패")
 
         except Exception as e:
             print("에러 발생:", str(e))
@@ -211,5 +208,70 @@ async def main():
         await asyncio.sleep(1/60)
 
 
+
+
+# ----------------- 테스트1 --------------
+# @sio.on('camera_video')
+# def give_video(data):
+#     if data == "start":
+#         # take image, give to server
+#         print("start")
+#         good = """sudo mjpg_streamer -i 'input_uvc.so' -o 'output_http.so -w /usr/local/share/mjpg-streamer/www -p 9090'&"""
+#         os.system(good)
+#         time.sleep(2)
+        
+#         capt = asyncio.get_event_loop().run_until_complete(main())
+
+#     elif data == "end":
+#         # stop take image
+#         print("end")
+#         capt.cancle()
+
+
+    
+# async def capture_and_encode_image():
+#     # 이미지 캡처
+#     capture = cv2.VideoCapture("http://127.0.0.1:9090/?action=stream")
+#     ret, frame = capture.read()
+#     frame = cv2.resize(frame, dsize=(int(320*1.8),int(240*1.8)), interpolation = cv2.INTER_AREA)
+
+#     capture.release()
+#     # 이미지 인코딩
+#     _, encoded_image = cv2.imencode('.jpg', frame)
+#     image_base64 = base64.b64encode(encoded_image).decode('utf-8')
+
+#     return image_base64
+
+# async def send_image_to_server(image_base64):
+#     url = "http://43.200.191.244:5000/upload"  # 실제 서버 주소와 포트를 입력하세요
+#     payload = {"image": image_base64}
+#     headers = {"Content-Type": "application/json"}
+
+#     response = await asyncio.get_event_loop().run_in_executor(
+#         None, lambda: requests.post(url, json=payload, headers=headers)
+#     )
+#     return response
+
+# async def main():
+#     while True:
+#         try:
+#             # 이미지 캡처 및 인코딩 비동기로 처리
+#             image_base64 = await capture_and_encode_image()
+
+#             # 이미지 서버로 전송 비동기로 처리
+#             response = await send_image_to_server(image_base64)
+
+#             if response.status_code == 200:
+#                 print("이미지 전송 성공")
+#             else:
+#                 print("이미지 전송 실패")
+
+#         except Exception as e:
+#             print("에러 발생:", str(e))
+
+#         # 일정 시간 간격으로 반복
+#         await asyncio.sleep(1/60)
+
+
 if __name__ == '__main__' :
-    sio.connect('http://43.200.191.244:5000')
+    sio.connect('http://3.36.70.207:5000')
