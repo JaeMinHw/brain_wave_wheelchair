@@ -35,12 +35,11 @@ gpio.setup(ECHO, gpio.IN)
 
 sio = socketio.Client()
 
-# thread1 = threading.Thread()
-# thread2 = threading.Thread()
-# thread3 = threading.Thread()
-# thread4 = threading.Thread()
 
-
+thread1 = None
+thread2 = None
+thread3 = None
+thread4 = None
 
 
 # after distance detect, if distance is too close, s = '7' ard.write(s.encode()) 
