@@ -8,9 +8,10 @@ from flask_socketio import SocketIO, emit
 import pymysql
 from flask import Flask
 from flask_cors import CORS
-from firebase_admin import messaging
-import firebase_admin
-from firebase_admin import credentials
+from flask import request
+# from firebase_admin import messaging
+# import firebase_admin
+# from firebase_admin import credentials
 
 
 
@@ -26,6 +27,10 @@ port = 3306
 username = "root"
 database = "ewc"
 password = "woals9127!"
+
+data1 = None
+
+
 
 # db연결
 def dbconn(host,port,username,password,database) :
@@ -178,53 +183,82 @@ def ProSignup(wheelid,id,pw,phone) :
     
     else :
         return "fail"
-
-
-# 충격 감지 <사용자 아이디>
-@app.route('/crash/<string:who>')
-def crash(who):
-    # 충격받은 사용자
-    print("충격 감지")
-    c = os.getcwd()
-    print(c)
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(c+"/brain-ewc-firebase-adminsdk-ulueg-8a2accc282.json")
-        firebase_admin.initialize_app(cred)
+    
+    
+    
+# 보호자 전화걸기
+@app.route('/call/<string:id>')
+def call_number(id):
+    print(id, "전화번호 출력")
     global host
     global port
     global username
     global database
     global password
-    
     conn,cursor = dbconn(host,port,username,password,database)
-    
-    query = """select device_tok 
-    from protect, protect_device
-    where user_id = %s and protect.pro_id = protect_device.pro_id """
-    
-    val = (who)
-    
+    query = """select user_phone
+        from protect p, user u
+        where p.pro_id = %s and p.user_id = u.user_id"""
+        
+    val = (id)
+        
     cursor.execute(query,val)
     rows = cursor.fetchall()
-    
+
     for row in rows:
+        phone = row[0]
+
+        print(phone)
+        return phone
+    return None
+
+
+
+# # 충격 감지 <사용자 아이디>
+# @app.route('/crash/<string:who>')
+# def crash(who):
+#     # 충격받은 사용자
+#     print("충격 감지")
+#     c = os.getcwd()
+#     print(c)
+#     if not firebase_admin._apps:
+#         cred = credentials.Certificate(c+"/brain-ewc-firebase-adminsdk-ulueg-8a2accc282.json")
+#         firebase_admin.initialize_app(cred)
+#     global host
+#     global port
+#     global username
+#     global database
+#     global password
+    
+#     conn,cursor = dbconn(host,port,username,password,database)
+    
+#     query = """select device_tok 
+#     from protect, protect_device
+#     where user_id = %s and protect.pro_id = protect_device.pro_id """
+    
+#     val = (who)
+    
+#     cursor.execute(query,val)
+#     rows = cursor.fetchall()
+    
+#     for row in rows:
        
-        registration_token = row[0]
-        print(registration_token)
+#         registration_token = row[0]
+#         print(registration_token)
         
     
-    message = messaging.Message(
-        notification=messaging.Notification(
-            title="충격이 감지되었습니다.",
-            body=" 사용자의 휠체어에 충격이 감지되었습니다.\n확인해주세요",
-        ),
-        token=registration_token,
-    )
+#     message = messaging.Message(
+#         notification=messaging.Notification(
+#             title="충격이 감지되었습니다.",
+#             body=" 사용자의 휠체어에 충격이 감지되었습니다.\n확인해주세요",
+#         ),
+#         token=registration_token,
+#     )
 
-    response = messaging.send(message)
-    print('Successfully sent message:', response)
-    conn.close()
-    return "success"
+#     response = messaging.send(message)
+#     print('Successfully sent message:', response)
+#     conn.close()
+#     return "success"
     
     
 @app.route('/token/<string:who>/<string:tok>')
@@ -266,7 +300,9 @@ def place(user_id,latitude,longitude):
     val1 = (user_id)
     cursor.execute(query1,val1)
     conn.commit()
+    conn.close()
     query = """insert into user_place(user_id,latitude,longitude) value(%s,%s,%s)"""
+    conn,cursor = dbconn(host,port,username,password,database)
     val = (user_id,latitude,longitude)
     cursor.execute(query,val)
     conn.commit()
@@ -426,8 +462,8 @@ def brain_wave(value) :
 def connect() :
     socketio.emit("response","너 연결")
 
-@socketio.on("request")
-def request(message) :
+@socketio.on("request1")
+def request1(message) :
     print("message : " + message )
     socketio.emit("order",message)
     
@@ -440,12 +476,12 @@ def message(message) :
 @socketio.on('start_video')
 def video_conn(data):
     # 라즈베리 파이에게 카메라 달라고 하기
-    emit('camera_video',"start")
+    socketio.emit('camera_video',"start")
     
 @socketio.on('end_video')
 def video_conn(data):
     # 라즈베리 파이에게 카메라 달라고 하기
-    emit('camera_video',"end")
+    socketio.emit('camera_video',"end")
     
     
     
@@ -455,11 +491,14 @@ def video_conn(data):
 # 라즈베리파이에서 서버로 이미지 전송
 @socketio.on('upload')
 def rasp_to_server(data):
-    socketio.emit('stream',data)
+    global data1
+    data1 = data
+    print("Test")
+    print(data)
+    socketio.emit('stream',data1,broadcast=True)
     
-    
-    
-    
+
+
     
 # 라즈베리파이에서 이미지 주는 경로
 @app.route('/upload', methods=['POST'])
@@ -467,7 +506,8 @@ def handle_upload():
     image = request.json['image']
     # 이미지 처리 로직을 수행
     # 안드로이드가 받을 수 있게
-    emit('stream',image,broadcast = True)
+    socketio.emit('stream',image,broadcast = True)
+    print("test")
     return 200
 
     
@@ -477,4 +517,4 @@ def test(value):
     return value
 if __name__ == '__main__':
     # app.run(host='0.0.0.0')
-    socketio.run(app, host='0.0.0.0')
+    socketio.run(app, host='0.0.0.0',port = 5000)

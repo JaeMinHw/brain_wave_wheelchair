@@ -166,7 +166,7 @@ def give_video(data):
     elif data == "end":
         # stop take image
         print("end")
-        capt.cancle()
+        capt.cancel()
         
         
         
@@ -190,6 +190,8 @@ async def send_image_to_server(image_base64):
 
 
 
+
+
 async def main():
     while True:
         try:
@@ -198,13 +200,18 @@ async def main():
 
             # 이미지 서버로 전송 비동기로 처리
             await send_image_to_server(image_base64)
+            # 일정 시간 간격으로 반복
+            await asyncio.sleep(1/60)
 
 
         except Exception as e:
             print("에러 발생:", str(e))
 
-        # 일정 시간 간격으로 반복
-        await asyncio.sleep(1/60)
+
+
+# ----------------- 테스트 2 end --------------
+
+
 
 
 
