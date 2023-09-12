@@ -9,9 +9,9 @@ import pymysql
 from flask import Flask
 from flask_cors import CORS
 from flask import request
-# from firebase_admin import messaging
-# import firebase_admin
-# from firebase_admin import credentials
+from firebase_admin import messaging
+import firebase_admin
+from firebase_admin import credentials
 
 
 
@@ -214,51 +214,51 @@ def call_number(id):
 
 
 
-# # 충격 감지 <사용자 아이디>
-# @app.route('/crash/<string:who>')
-# def crash(who):
-#     # 충격받은 사용자
-#     print("충격 감지")
-#     c = os.getcwd()
-#     print(c)
-#     if not firebase_admin._apps:
-#         cred = credentials.Certificate(c+"/brain-ewc-firebase-adminsdk-ulueg-8a2accc282.json")
-#         firebase_admin.initialize_app(cred)
-#     global host
-#     global port
-#     global username
-#     global database
-#     global password
+# 충격 감지 <사용자 아이디>
+@app.route('/crash/<string:who>')
+def crash(who):
+    # 충격받은 사용자
+    print("충격 감지")
+    c = os.getcwd()
+    print(c)
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(c+"/brain-ewc-firebase-adminsdk-ulueg-8a2accc282.json")
+        firebase_admin.initialize_app(cred)
+    global host
+    global port
+    global username
+    global database
+    global password
     
-#     conn,cursor = dbconn(host,port,username,password,database)
+    conn,cursor = dbconn(host,port,username,password,database)
     
-#     query = """select device_tok 
-#     from protect, protect_device
-#     where user_id = %s and protect.pro_id = protect_device.pro_id """
+    query = """select device_tok 
+    from protect, protect_device
+    where user_id = %s and protect.pro_id = protect_device.pro_id """
     
-#     val = (who)
+    val = (who)
     
-#     cursor.execute(query,val)
-#     rows = cursor.fetchall()
+    cursor.execute(query,val)
+    rows = cursor.fetchall()
     
-#     for row in rows:
+    for row in rows:
        
-#         registration_token = row[0]
-#         print(registration_token)
+        registration_token = row[0]
+        print(registration_token)
         
     
-#     message = messaging.Message(
-#         notification=messaging.Notification(
-#             title="충격이 감지되었습니다.",
-#             body=" 사용자의 휠체어에 충격이 감지되었습니다.\n확인해주세요",
-#         ),
-#         token=registration_token,
-#     )
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title="충격이 감지되었습니다.",
+            body=" 사용자의 휠체어에 충격이 감지되었습니다.\n확인해주세요",
+        ),
+        token=registration_token,
+    )
 
-#     response = messaging.send(message)
-#     print('Successfully sent message:', response)
-#     conn.close()
-#     return "success"
+    response = messaging.send(message)
+    print('Successfully sent message:', response)
+    conn.close()
+    return "success"
     
     
 @app.route('/token/<string:who>/<string:tok>')
